@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title id="pageTitle">Enter</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 100px;
+    }
+    input {
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #error {
+      color: red;
+      margin-top: 10px;
+    }
+    #langSelect {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <select id="langSelect">
+    <option value="en">English</option>
+    <option value="ru">Русский</option>
+  </select>
+
+  <h1 id="enterLabel">Enter your name</h1>
+  <input type="text" id="nameInput" placeholder="Your name" />
+  <button id="enterBtn">Ready</button>
+  <div id="error"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const btn = document.getElementById('enterBtn');
+    const input = document.getElementById('nameInput');
+    const error = document.getElementById('error');
+    const enterLabel = document.getElementById('enterLabel');
+    const langSelect = document.getElementById('langSelect');
+
+    let lang = localStorage.getItem('lang') || 'en';
+    langSelect.value = lang;
+
+    const applyLang = (data) => {
+      enterLabel.textContent = data.enter_name;
+      input.placeholder = data.your_name;
+      btn.textContent = data.ready;
+    };
+
+    const loadLang = () => {
+      fetch(`/lang/${lang}.json`)
+        .then(res => res.json())
+        .then(data => {
+          applyLang(data);
+        });
+    };
+
+    loadLang();
+
+    langSelect.onchange = () => {
+      lang = langSelect.value;
+      localStorage.setItem('lang', lang);
+      loadLang();
+    };
+
+    btn.onclick = () => {
+      const name = input.value.trim();
+      if (!name) {
+        fetch(`/lang/${lang}.json`)
+          .then(res => res.json())
+          .then(data => {
+            error.textContent = data.name_empty;
+          });
+        return;
+      }
+
+      socket.emit("setUsername", name, (response) => {
+        if (!response.success) {
+        fetch(`/lang/${lang}.json`)
+          .then(res => res.json())
+          .then(data => {
+            error.textContent = data[response.messageKey] || "Unknown error";
+          });
+      }else {
+          sessionStorage.setItem("username", name);
+          window.location.href = "main.html";
+        }
+      });
+    };
+  </script>
+</body>
+</html>

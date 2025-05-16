@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title id="pageTitle">Room</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; display: flex; justify-content: space-between; }
+    #left, #right { width: 48%; }
+    .player-item { margin: 5px 0; }
+    #timer, #roundTimer { font-weight: bold; margin-top: 20px; }
+    #startBtn { display: none; margin-top: 20px; padding: 10px 20px; font-size: 1.1em; }
+    #choices { margin-top: 20px; display: none; flex-wrap: wrap; max-width: 650px; }
+    .choice-btn {
+      width: 60px;
+      height: 60px;
+      margin: 4px;
+      font-size: 1.2em;
+      cursor: pointer;
+    }
+    #roundLog {
+      background: #f3f3f3;
+      border: 1px solid #ccc;
+      padding: 10px;
+      height: 300px;
+      overflow-y: auto;
+    }
+    .winner { color: green; font-weight: bold; }
+    .loser { color: red; }
+    #toast {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: #333;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      opacity: 0.9;
+      z-index: 1000;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="toast"></div>
+
+  <div id="left">
+    <h2 id="roomHeader"></h2>
+    <div id="players"><h3 id="playersLabel"></h3></div>
+    <div id="timer"></div>
+    <button id="startBtn"></button>
+    <div id="roundTimer" style="display:none;"></div>
+    <div id="choices" style="display: flex; flex-wrap: wrap;"></div>
+  </div>
+
+  <div id="right">
+    <h3 id="movesLabel"></h3>
+    <div id="roundLog"></div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    let lang = localStorage.getItem('lang') || 'en';
+    let translations = {};
+
+    function t(key, vars = {}) {
+      let str = translations[key] || key;
+      for (const [k, v] of Object.entries(vars)) {
+        str = str.replace(`{${k}}`, v);
+      }
+      return str;
+    }
+
+    function loadTranslations(callback) {
+      fetch(`/lang/${lang}.json`)
+        .then(res => res.json())
+        .then(data => {
+          translations = data;
+          callback();
+        });
+    }
+
+    loadTranslations(() => {
+      const username = sessionStorage.getItem("username");
+      const roomName = sessionStorage.getItem("roomName");
+      if (!username || !roomName) location.href = "index.html";
+
+      const socket = io();
+      let roomCreator = null;
+      let isEliminated = false;
+
+      const showToast = (text) => {
+        const toast = document.getElementById("toast");
+        toast.textContent = text;
+        toast.style.display = "block";
+        setTimeout(() => { toast.style.display = "none"; }, 3000);
+      };
+
+      document.getElementById("pageTitle").textContent = t("room_title");
+      document.getElementById("roomHeader").textContent = `${t("you")}: ${username} | ${t("room")}: ${roomName}`;
+      document.getElementById("playersLabel").textContent = t("players");
+      document.getElementById("startBtn").textContent = t("start_round");
+      document.getElementById("movesLabel").textContent = t("round_moves");
+      document.getElementById("timer").textContent = `${t("waiting_start")}: 180 ${t("sec")}`;
+
+      socket.emit("setUsername", username, (res) => {
+        if (!res.success) {
+          alert(t(res.messageKey || "error"));
+          location.href = "index.html";
+          return;
+        }
+        socket.emit("joinRoom", { room: roomName, username });
+      });
+
+      socket.on("roomInfo", ({ creator, points }) => {
+        roomCreator = creator;
+        renderPlayers(points);
+        if (username === roomCreator) {
+          document.getElementById("startBtn").style.display = "block";
+        }
+      });
+
+      socket.on("roomTimer", (secondsLeft) => {
+        document.getElementById("timer").textContent = `${t("waiting_start")}: ${secondsLeft} ${t("sec")}`;
+      });
+
+      socket.on("updatePlayers", (arr) => {
+        const obj = Object.fromEntries(arr.map(({ username, points }) => [username, points]));
+        renderPlayers(obj);
+      });
+
+      function renderPlayers(pointsObj) {
+        const div = document.getElementById("players");
+        div.innerHTML = `<h3>${t("players")}:</h3>`;
+        Object.entries(pointsObj).forEach(([u, p]) => {
+          if (u !== username || !isEliminated) {
+            const d = document.createElement("div");
+            d.className = "player-item";
+            d.textContent = `${u} — ${p} ${t("points")}`;
+            div.appendChild(d);
+          }
+        });
+      }
+
+      document.getElementById("startBtn").onclick = () => {
+        socket.emit("startGame", { room: roomName });
+        document.getElementById("startBtn").disabled = true;
+      };
+
+      socket.on("gameStarted", () => {
+        document.getElementById("startBtn").style.display = "none";
+        document.getElementById("timer").style.display = "none";
+        document.getElementById("roundTimer").style.display = "block";
+        showChoices();
+      });
+
+      socket.on("roundTimer", (sec) => {
+        const m = String(Math.floor(sec / 60)).padStart(2, "0");
+        const s = String(sec % 60).padStart(2, "0");
+        document.getElementById("roundTimer").textContent = `${t("time_left")}: ${m}:${s}`;
+      });
+
+      function showChoices() {
+        const c = document.getElementById("choices");
+        c.innerHTML = "";
+        if (isEliminated) {
+          c.style.display = "none";
+          return;
+        }
+        c.style.display = "flex";
+        for (let i = 0; i <= 100; i++) {
+          const btn = document.createElement("button");
+          btn.className = "choice-btn";
+          btn.textContent = i;
+          btn.onclick = () => {
+            socket.emit("makeChoice", { room: roomName, choice: i });
+            c.querySelectorAll("button").forEach(b => b.disabled = true);
+          };
+          c.appendChild(btn);
+        }
+      }
+
+      socket.on("roundResult", ({ round, choices, winners, eliminated, target }) => {
+        const log = document.getElementById("roundLog");
+        const entry = document.createElement("div");
+        entry.innerHTML = `<strong>${t("round")} ${round}</strong><br>` +
+          `${t("target")}: <strong>${target}</strong><br><br>` +
+          Object.entries(choices)
+            .map(([u, v]) => {
+              let cls = winners.includes(u) ? "winner" : (eliminated.includes(u) ? "loser" : "");
+              return `<span class="${cls}">${u}: ${v}</span>`;
+            })
+            .join("<br>");
+        log.prepend(entry);
+
+        if (eliminated.includes(username)) {
+          isEliminated = true;
+          showToast(`❌ ${t("you_lost")}`);
+        }
+
+        document.getElementById("choices").style.display = "none";
+        document.getElementById("roundTimer").style.display = "none";
+      });
+
+      socket.on("gameOver", ({ winner }) => {
+        if (winner === username) {
+          showToast(`🎉 ${t("you_won")}`);
+        } else {
+          showToast(`🎉 ${t("winner_is")}: ${winner}`);
+        }
+      });
+
+      socket.on("roomClosed", () => {
+        setTimeout(() => {
+          sessionStorage.removeItem("roomName");
+          location.href = "main.html";
+        }, 3000);
+      });
+
+      socket.on("error", (msg) => {
+        alert(t(msg.messageKey || "error"));
+        location.href = "main.html";
+      });
+    });
+  </script>
+</body>
+</html>

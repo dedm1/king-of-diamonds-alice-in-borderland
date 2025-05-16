@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title id="pageTitle">Создание комнаты</title>
+</head>
+<body>
+  <h2 id="titleText">Введите название комнаты</h2>
+  <input type="text" id="roomInput" placeholder="Название комнаты" />
+  <button id="createBtn">Создать</button>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    let lang = localStorage.getItem('lang') || 'en';
+    let translations = {};
+
+    function t(key) {
+      return translations[key] || key;
+    }
+
+    function loadTranslations(callback) {
+      fetch(`/lang/${lang}.json`)
+        .then(res => res.json())
+        .then(data => {
+          translations = data;
+          callback();
+        });
+    }
+
+    loadTranslations(() => {
+      const username = sessionStorage.getItem("username");
+      if (!username) window.location.href = "index.html";
+
+      document.getElementById("pageTitle").textContent = t("create_room_title");
+      document.getElementById("titleText").textContent = t("enter_room_name");
+      document.getElementById("roomInput").placeholder = t("room_name_placeholder");
+      document.getElementById("createBtn").textContent = t("create");
+
+      const socket = io();
+      const btn = document.getElementById("createBtn");
+      const input = document.getElementById("roomInput");
+
+      btn.onclick = () => {
+        const room = input.value.trim();
+        if (!room) return alert(t("enter_room_name_alert"));
+
+        socket.emit("createRoom", { room, username }, (response) => {
+          if (!response.success) {
+            alert(response.message || t("create_room_failed"));
+            return;
+          }
+
+          sessionStorage.setItem("roomName", room);
+          window.location.href = "room.html";
+        });
+      };
+    });
+  </script>
+</body>
+</html>
