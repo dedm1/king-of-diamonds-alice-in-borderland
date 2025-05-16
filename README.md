@@ -1,6 +1,13 @@
 # Game Based on the Movie **“Alice in Borderland”**  
 ## King of Diamonds
 
+
+**Website:** [https://king-of-diamonds-alice-in-borderland.onrender.com](https://king-of-diamonds-alice-in-borderland.onrender.com)
+
+**Description:**  
+The game runs **very slowly** on the hosted server.  
+However, it performs **much faster** locally.
+
 ---
 
 ## How It Works

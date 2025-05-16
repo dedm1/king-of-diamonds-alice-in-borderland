@@ -1,6 +1,12 @@
 # Игра по фильму **«Алиса в Пограничье»**  
 ## Король Бубей
 
+**Сайт:** [(https://king-of-diamonds-alice-in-borderland.onrender.com](https://king-of-diamonds-alice-in-borderland.onrender.com)
+
+**Описание:**  
+Игра на размещённом сервере работает **очень медленно**.  
+Локально же всё работает **гораздо быстрее**.
+
 ---
 
 ## Как это работает
@@ -55,3 +61,4 @@
 - **Express.js**
 - Запуск в разработке: `npm run dev`
 - Запуск проекта: `npm run start`
+dashboard.render.com
