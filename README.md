@@ -2,7 +2,8 @@
 ## King of Diamonds
 
 
-**Website:** [https://king-of-diamonds-alice-in-borderland.onrender.com](https://king-of-diamonds-alice-in-borderland.onrender.com)
+**Website:** - [https://king-of-diamonds-alice-in-borderland.onrender.com](https://king-of-diamonds-alice-in-borderland.onrender.com)  
+- [https://king-of-diamonds-alice-in-borderland.fly.dev](https://king-of-diamonds-alice-in-borderland.fly.dev)  
 
 **Description:**  
 The game runs **very slowly** on the hosted server.  

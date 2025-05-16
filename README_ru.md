@@ -1,7 +1,8 @@
 # Игра по фильму **«Алиса в Пограничье»**  
 ## Король Бубей
 
-**Сайт:** [(https://king-of-diamonds-alice-in-borderland.onrender.com](https://king-of-diamonds-alice-in-borderland.onrender.com)
+**Сайт:** - [https://king-of-diamonds-alice-in-borderland.onrender.com](https://king-of-diamonds-alice-in-borderland.onrender.com)  
+- [https://king-of-diamonds-alice-in-borderland.fly.dev](https://king-of-diamonds-alice-in-borderland.fly.dev)  
 
 **Описание:**  
 Игра на размещённом сервере работает **очень медленно**.  
