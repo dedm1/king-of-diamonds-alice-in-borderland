@@ -1,4 +1,3 @@
-// Обновлённый server/index.js с логикой: таймер ожидания, поражение без вылета, победа с завершением игры
 
 import express from "express";
 import { createServer } from "http";
